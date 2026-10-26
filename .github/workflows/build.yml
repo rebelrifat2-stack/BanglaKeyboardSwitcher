@@ -1,0 +1,33 @@
+# Builds the Windows installer in GitHub's free cloud (no tools needed on your PC).
+name: build-installer
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - name: Build 64-bit input service
+        run: |
+          cmake -S . -B build/x64 -A x64
+          cmake --build build/x64 --config Release
+      - name: Build 32-bit input service
+        run: |
+          cmake -S . -B build/x86 -A Win32
+          cmake --build build/x86 --config Release
+      - name: Engine unit tests
+        run: build/x64/Release/engine_tests.exe
+      - name: Publish controller
+        run: dotnet publish controller/BanglaSwitcher.csproj -c Release -o controller/publish
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+      - name: Build installer
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BanglaKeyboardSwitcher-Setup
+          path: dist/BanglaKeyboardSwitcher-Setup.exe
