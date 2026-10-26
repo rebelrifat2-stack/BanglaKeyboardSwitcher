@@ -111,7 +111,7 @@ STDMETHODIMP TextService::ActivateEx(ITfThreadMgr* ptim, TfClientId tid, DWORD) 
 }
 
 STDMETHODIMP TextService::Deactivate() {
-    ForceEnd();
+    ForceEnd(); PickEngineFromActiveProfile();
     if (_tm) {
         ITfKeystrokeMgr* km = nullptr;
         if (SUCCEEDED(_tm->QueryInterface(IID_ITfKeystrokeMgr, (void**)&km)) && km) { km->UnadviseKeyEventSink(_tid); km->Release(); }
@@ -128,7 +128,7 @@ STDMETHODIMP TextService::Deactivate() {
     return S_OK;
 }
 
-STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr*, ITfDocumentMgr*) { ForceEnd(); return S_OK; }
+STDMETHODIMP TextService::OnSetFocus(ITfDocumentMgr*, ITfDocumentMgr*) { ForceEnd(); PickEngineFromActiveProfile(); return S_OK; }
 STDMETHODIMP TextService::OnSetFocus(BOOL) { return S_OK; }
 
 STDMETHODIMP TextService::OnCompositionTerminated(TfEditCookie, ITfComposition* pComp) {
@@ -264,7 +264,7 @@ STDMETHODIMP TextService::OnKeyDown(ITfContext* pic, WPARAM wParam, LPARAM, BOOL
     *pfEaten = FALSE;
     if (!_engine || IsModifierVk((UINT)wParam)) return S_OK;
 
-    if (_compCtx && _compCtx != pic) ForceEnd();               // focus moved to another context
+    if (_compCtx && _compCtx != pic) ForceEnd(); PickEngineFromActiveProfile();               // focus moved to another context
 
     char c; Action a = Classify((UINT)wParam, &c);
     switch (a) {
